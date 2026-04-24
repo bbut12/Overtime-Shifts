@@ -124,12 +124,12 @@
 // CONFIGURATION — Update these values for your SharePoint site
 // ============================================================
 const CONFIG = {
-  // Set to true once you have configured SharePoint lists
-  useSharePoint: true,
+  // Set to true if using SharePoint lists for storage
+  useSharePoint: false,
 
   // Your SharePoint site URL (no trailing slash)
   // Example: "https://quinnipiac.sharepoint.com/sites/Facilities"
-  siteUrl: "https://quinnipiacuniversity.sharepoint.com/teams/CMMSModernizationProject/SitePages/Overtime-Shifts.aspx",
+  siteUrl: "https://YOUR-TENANT.sharepoint.com/sites/YOUR-SITE",
 
   // SharePoint list names (create these in SharePoint — see instructions)
   shiftsListName: "OvertimeShifts",
@@ -142,17 +142,21 @@ const CONFIG = {
 
 const CLASSIFICATIONS = ['Custodian','Groundskeeper','Mechanic','Electrician','Plumber'];
 
-// Local demo data (used when useSharePoint is false)
-let localShifts = [
-  { id:1, Title:'Custodian — Main Campus', ShiftDate:'Mon, Apr 28', ShiftTime:'6:00 AM – 2:00 PM', Classification:'Custodian', Location:'Main Campus', Spots:3 },
-  { id:2, Title:'Groundskeeper — Athletic Fields', ShiftDate:'Mon, Apr 28', ShiftTime:'2:00 PM – 10:00 PM', Classification:'Groundskeeper', Location:'Athletic Fields', Spots:2 },
-  { id:3, Title:'Mechanic — Facilities Garage', ShiftDate:'Tue, Apr 29', ShiftTime:'7:00 AM – 3:00 PM', Classification:'Mechanic', Location:'Facilities Garage', Spots:2 },
-  { id:4, Title:'Electrician — Tech Center', ShiftDate:'Wed, Apr 30', ShiftTime:'6:00 AM – 2:00 PM', Classification:'Electrician', Location:'Tech Center', Spots:4 },
-  { id:5, Title:'Plumber — Residence Halls', ShiftDate:'Thu, May 1', ShiftTime:'8:00 AM – 4:00 PM', Classification:'Plumber', Location:'Residence Halls', Spots:2 },
-];
-let localSignups = [];
-let localNextId = 6;
-let localNextSignupId = 1;
+// localStorage-backed persistence
+function lsGet(key, fallback){ try { const v=localStorage.getItem(key); return v!==null?JSON.parse(v):fallback; } catch(e){ return fallback; } }
+function lsSet(key, val){ try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
+
+let localShifts = lsGet('ot_shifts', []);
+let localSignups = lsGet('ot_signups', []);
+let localNextId = lsGet('ot_next_shift_id', 1);
+let localNextSignupId = lsGet('ot_next_signup_id', 1);
+
+function saveLocal(){
+  lsSet('ot_shifts', localShifts);
+  lsSet('ot_signups', localSignups);
+  lsSet('ot_next_shift_id', localNextId);
+  lsSet('ot_next_signup_id', localNextSignupId);
+}
 
 let shifts = [];
 let signups = [];
@@ -270,6 +274,7 @@ async function loadSignups(){
 async function addSignup(shiftId, name, seniority){
   if(!CONFIG.useSharePoint){
     localSignups.push({ id:localNextSignupId++, ShiftId:shiftId, EmployeeName:name, SeniorityNumber:parseInt(seniority), SignupTime:nowStr(), Assigned:false });
+    saveLocal();
     return;
   }
   await spPost(`web/lists/getbytitle('${CONFIG.signupsListName}')/items`, {
@@ -286,6 +291,7 @@ async function markAssigned(signupId){
   if(!CONFIG.useSharePoint){
     const s=localSignups.find(x=>x.id===signupId);
     if(s) s.Assigned=true;
+    saveLocal();
     return;
   }
   await spPatch(`web/lists/getbytitle('${CONFIG.signupsListName}')/items(${signupId})`, { Assigned: true });
@@ -294,6 +300,7 @@ async function markAssigned(signupId){
 async function createShift(data){
   if(!CONFIG.useSharePoint){
     localShifts.push({ id:localNextId++, Title:`${data.Classification} — ${data.Location}`, ...data });
+    saveLocal();
     return;
   }
   await spPost(`web/lists/getbytitle('${CONFIG.shiftsListName}')/items`, {
@@ -310,6 +317,7 @@ async function updateShift(id, data){
   if(!CONFIG.useSharePoint){
     const s=localShifts.find(x=>x.id===id);
     if(s) Object.assign(s, data, { Title:`${data.Classification} — ${data.Location}` });
+    saveLocal();
     return;
   }
   await spPatch(`web/lists/getbytitle('${CONFIG.shiftsListName}')/items(${id})`, {
@@ -326,6 +334,7 @@ async function deleteShiftById(id){
   if(!CONFIG.useSharePoint){
     localShifts = localShifts.filter(x=>x.id!==id);
     localSignups = localSignups.filter(x=>x.ShiftId!==id);
+    saveLocal();
     return;
   }
   await spDelete(`web/lists/getbytitle('${CONFIG.shiftsListName}')/items(${id})`);
@@ -577,7 +586,7 @@ async function refreshAll(){
     await loadSignups();
     renderEmployee();
   } catch(e){
-    showBanner('Could not connect to SharePoint. Running in demo mode.', true);
+    // running in local mode
     renderEmployee();
   }
 })();
