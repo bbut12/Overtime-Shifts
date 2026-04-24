@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overtime Shift Sign-Up</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", Arial, sans-serif; background: #f3f2f1; color: #323130; min-height: 100vh; }
+  .app { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; }
+  h1 { font-size: 20px; font-weight: 600; color: #1b1b1b; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #605e5c; margin-bottom: 1.25rem; }
+  .tab-bar { display: flex; border-bottom: 1px solid #edebe9; margin-bottom: 1.25rem; gap: 0; }
+  .tab { padding: 10px 20px; font-size: 14px; font-weight: 400; color: #605e5c; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: #0078d4; font-weight: 600; border-bottom: 2px solid #0078d4; }
+  .tab:hover:not(.active) { color: #323130; background: #f3f2f1; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .shift-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .shift-card { background: #fff; border: 1px solid #edebe9; border-radius: 4px; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .shift-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 8px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 2px; white-space: nowrap; }
+  .badge-Custodian { background: #e1f5ee; color: #085041; }
+  .badge-Groundskeeper { background: #eaf3de; color: #27500a; }
+  .badge-Mechanic { background: #faeeda; color: #633806; }
+  .badge-Electrician { background: #e6f1fb; color: #0c447c; }
+  .badge-Plumber { background: #fbeaf0; color: #72243e; }
+  .shift-date { font-size: 12px; color: #605e5c; margin-bottom: 3px; }
+  .shift-title { font-size: 15px; font-weight: 600; color: #1b1b1b; margin-bottom: 2px; }
+  .shift-time { font-size: 13px; color: #605e5c; margin-bottom: 10px; }
+  .spots-bar { height: 4px; background: #edebe9; border-radius: 2px; margin-bottom: 8px; overflow: hidden; }
+  .spots-fill { height: 100%; background: #107c10; border-radius: 2px; transition: width 0.3s; }
+  .spots-fill.warn { background: #ca5010; }
+  .spots-fill.full-fill { background: #a4262c; }
+  .shift-spots { font-size: 12px; color: #605e5c; margin-bottom: 10px; }
+  .signup-fields { display: flex; flex-direction: column; gap: 6px; }
+  .field-row { display: flex; flex-direction: column; gap: 3px; }
+  .field-row label { font-size: 11px; color: #605e5c; font-weight: 500; }
+  .field-row input { font-size: 13px; padding: 6px 8px; border: 1px solid #8a8886; border-radius: 2px; background: #fff; color: #323130; outline: none; width: 100%; }
+  .field-row input:focus { border-color: #0078d4; box-shadow: 0 0 0 1px #0078d4; }
+  .sen-row { display: flex; gap: 8px; align-items: flex-end; }
+  .sen-row .field-row { flex: 0 0 90px; }
+  .sen-hint { font-size: 11px; color: #a19f9d; padding-bottom: 7px; }
+  .btn-signup { margin-top: 2px; font-size: 13px; padding: 6px 16px; border-radius: 2px; border: none; background: #0078d4; color: #fff; cursor: pointer; font-weight: 500; align-self: flex-start; }
+  .btn-signup:hover { background: #106ebe; }
+  .signed-label { font-size: 12px; color: #107c10; font-weight: 600; }
+  .full-label { font-size: 12px; color: #a19f9d; }
+  .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .filter-chip { font-size: 12px; padding: 4px 12px; border-radius: 16px; border: 1px solid #8a8886; background: #fff; color: #605e5c; cursor: pointer; }
+  .filter-chip.active { background: #0078d4; color: #fff; border-color: #0078d4; }
+  .admin-bar { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+  .btn { font-size: 13px; padding: 6px 14px; border-radius: 2px; border: 1px solid #8a8886; background: #fff; color: #323130; cursor: pointer; font-weight: 500; }
+  .btn:hover { background: #f3f2f1; }
+  .btn-primary { background: #0078d4; color: #fff; border-color: #0078d4; }
+  .btn-primary:hover { background: #106ebe; }
+  .btn-danger { color: #a4262c; border-color: #a4262c; }
+  .btn-danger:hover { background: #fde7e9; }
+  .admin-list { display: flex; flex-direction: column; gap: 10px; }
+  .admin-card { background: #fff; border: 1px solid #edebe9; border-radius: 4px; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .admin-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .admin-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .admin-actions { display: flex; gap: 6px; }
+  .btn-sm { font-size: 12px; padding: 3px 10px; border-radius: 2px; border: 1px solid #8a8886; background: #fff; color: #323130; cursor: pointer; }
+  .btn-sm:hover { background: #f3f2f1; }
+  .signups-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
+  .signups-table th { text-align: left; font-size: 11px; font-weight: 600; color: #605e5c; text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 8px; border-bottom: 1px solid #edebe9; }
+  .signups-table td { padding: 6px 8px; border-bottom: 1px solid #f3f2f1; vertical-align: middle; }
+  .signups-table tr:last-child td { border-bottom: none; }
+  .signups-table tr:hover td { background: #f3f2f1; }
+  .seniority-chip { font-size: 11px; padding: 2px 7px; border-radius: 2px; background: #faeeda; color: #633806; font-weight: 600; }
+  .assign-btn { font-size: 11px; padding: 3px 8px; border-radius: 2px; border: 1px solid #107c10; background: #e1f5ee; color: #107c10; cursor: pointer; font-weight: 600; }
+  .assign-btn:hover { background: #c9edd9; }
+  .assigned-chip { font-size: 11px; padding: 2px 8px; border-radius: 2px; background: #e1f5ee; color: #107c10; font-weight: 600; }
+  .no-signups { font-size: 12px; color: #a19f9d; font-style: italic; padding: 6px 0; }
+  .sort-note { font-size: 11px; color: #a19f9d; margin-bottom: 6px; }
+  .modal-bg { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal { background: #fff; border-radius: 4px; padding: 1.5rem; width: 380px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+  .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 1rem; color: #1b1b1b; }
+  .form-row { margin-bottom: 12px; }
+  .form-row label { display: block; font-size: 12px; font-weight: 500; color: #323130; margin-bottom: 4px; }
+  .form-row input, .form-row select { width: 100%; font-size: 13px; padding: 7px 8px; border: 1px solid #8a8886; border-radius: 2px; background: #fff; color: #323130; outline: none; }
+  .form-row input:focus, .form-row select:focus { border-color: #0078d4; box-shadow: 0 0 0 1px #0078d4; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.25rem; }
+  .lock-wrap { display: flex; justify-content: center; padding: 3rem 1rem; }
+  .lock-box { background: #fff; border: 1px solid #edebe9; border-radius: 4px; padding: 2rem; width: 320px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .lock-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .lock-box p { font-size: 13px; color: #605e5c; margin-bottom: 1rem; }
+  .lock-error { font-size: 12px; color: #a4262c; margin-top: 6px; min-height: 16px; }
+  .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px; }
+  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: #323130; color: #fff; padding: 10px 20px; border-radius: 4px; font-size: 13px; font-weight: 500; z-index: 999; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+  .empty { font-size: 13px; color: #a19f9d; text-align: center; padding: 2.5rem 0; }
+  .status-banner { background: #dff6dd; border: 1px solid #107c10; color: #107c10; border-radius: 2px; padding: 8px 12px; font-size: 13px; margin-bottom: 1rem; display: none; }
+  .status-banner.error { background: #fde7e9; border-color: #a4262c; color: #a4262c; }
+  .loading { text-align: center; padding: 2rem; color: #605e5c; font-size: 13px; }
+  @media (max-width: 500px) {
+    .shift-grid { grid-template-columns: 1fr; }
+    .admin-info { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <h1>Overtime Shift Sign-Up</h1>
+  <p class="subtitle">Sign up for available overtime shifts below. Assignments are made based on seniority.</p>
+  <div id="status-banner" class="status-banner"></div>
+  <div class="tab-bar">
+    <button class="tab active" id="tab-emp" onclick="switchTab('employee')">Available Shifts</button>
+    <button class="tab" id="tab-adm" onclick="switchTab('admin')">Admin</button>
+  </div>
+  <div id="view-employee" class="view active">
+    <div class="filter-bar" id="filter-bar"></div>
+    <div id="shift-grid"></div>
+  </div>
+  <div id="view-admin" class="view">
+    <div id="admin-content"></div>
+  </div>
+  <div id="modal-container"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIGURATION — Update these values for your SharePoint site
+// ============================================================
+const CONFIG = {
+  // Set to true once you have configured SharePoint lists
+  useSharePoint: true,
+
+  // Your SharePoint site URL (no trailing slash)
+  // Example: "https://quinnipiac.sharepoint.com/sites/Facilities"
+  siteUrl: "https://quinnipiacuniversity.sharepoint.com/teams/CMMSModernizationProject/SitePages/Overtime-Shifts.aspx",
+
+  // SharePoint list names (create these in SharePoint — see instructions)
+  shiftsListName: "OvertimeShifts",
+  signupsListName: "OvertimeSignups",
+
+  // Admin password
+  adminPassword: "facilities2024"
+};
+// ============================================================
+
+const CLASSIFICATIONS = ['Custodian','Groundskeeper','Mechanic','Electrician','Plumber'];
+
+// Local demo data (used when useSharePoint is false)
+let localShifts = [
+  { id:1, Title:'Custodian — Main Campus', ShiftDate:'Mon, Apr 28', ShiftTime:'6:00 AM – 2:00 PM', Classification:'Custodian', Location:'Main Campus', Spots:3 },
+  { id:2, Title:'Groundskeeper — Athletic Fields', ShiftDate:'Mon, Apr 28', ShiftTime:'2:00 PM – 10:00 PM', Classification:'Groundskeeper', Location:'Athletic Fields', Spots:2 },
+  { id:3, Title:'Mechanic — Facilities Garage', ShiftDate:'Tue, Apr 29', ShiftTime:'7:00 AM – 3:00 PM', Classification:'Mechanic', Location:'Facilities Garage', Spots:2 },
+  { id:4, Title:'Electrician — Tech Center', ShiftDate:'Wed, Apr 30', ShiftTime:'6:00 AM – 2:00 PM', Classification:'Electrician', Location:'Tech Center', Spots:4 },
+  { id:5, Title:'Plumber — Residence Halls', ShiftDate:'Thu, May 1', ShiftTime:'8:00 AM – 4:00 PM', Classification:'Plumber', Location:'Residence Halls', Spots:2 },
+];
+let localSignups = [];
+let localNextId = 6;
+let localNextSignupId = 1;
+
+let shifts = [];
+let signups = [];
+let adminUnlocked = false;
+let activeFilter = 'All';
+let myName = '';
+let mySeniority = '';
+let isLoading = false;
+
+function fmt(n){ return n<10?'0'+n:n; }
+function nowStr(){ const d=new Date(); return `${fmt(d.getMonth()+1)}/${fmt(d.getDate())} ${fmt(d.getHours())}:${fmt(d.getMinutes())}`; }
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function showBanner(msg, isError=false){
+  const b=document.getElementById('status-banner');
+  b.textContent=msg; b.className='status-banner'+(isError?' error':'');
+  b.style.display='block';
+  setTimeout(()=>b.style.display='none', 4000);
+}
+
+// ============================================================
+// SharePoint REST API helpers
+// ============================================================
+async function spGet(endpoint){
+  const res = await fetch(`${CONFIG.siteUrl}/_api/${endpoint}`, {
+    headers: { 'Accept': 'application/json;odata=nometadata' }
+  });
+  if(!res.ok) throw new Error(`SharePoint GET failed: ${res.status}`);
+  return res.json();
+}
+
+async function spPost(endpoint, body){
+  const res = await fetch(`${CONFIG.siteUrl}/_api/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json;odata=nometadata',
+      'Content-Type': 'application/json;odata=nometadata',
+      'X-RequestDigest': await getRequestDigest()
+    },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error(`SharePoint POST failed: ${res.status}`);
+  return res.json();
+}
+
+async function spPatch(endpoint, body){
+  const digest = await getRequestDigest();
+  const res = await fetch(`${CONFIG.siteUrl}/_api/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json;odata=nometadata',
+      'Content-Type': 'application/json;odata=nometadata',
+      'X-RequestDigest': digest,
+      'X-HTTP-Method': 'MERGE',
+      'IF-MATCH': '*'
+    },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok && res.status !== 204) throw new Error(`SharePoint PATCH failed: ${res.status}`);
+}
+
+async function spDelete(endpoint){
+  const digest = await getRequestDigest();
+  const res = await fetch(`${CONFIG.siteUrl}/_api/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'X-RequestDigest': digest,
+      'X-HTTP-Method': 'DELETE',
+      'IF-MATCH': '*'
+    }
+  });
+  if(!res.ok && res.status !== 204) throw new Error(`SharePoint DELETE failed: ${res.status}`);
+}
+
+let _digest = null;
+let _digestExpiry = 0;
+async function getRequestDigest(){
+  if(_digest && Date.now() < _digestExpiry) return _digest;
+  const res = await fetch(`${CONFIG.siteUrl}/_api/contextinfo`, {
+    method: 'POST',
+    headers: { 'Accept': 'application/json;odata=nometadata' }
+  });
+  const data = await res.json();
+  _digest = data.FormDigestValue;
+  _digestExpiry = Date.now() + (data.FormDigestTimeoutSeconds - 30) * 1000;
+  return _digest;
+}
+
+// ============================================================
+// Data layer — switches between SharePoint and local demo
+// ============================================================
+async function loadShifts(){
+  if(!CONFIG.useSharePoint){
+    shifts = localShifts.map(s=>({...s}));
+    return;
+  }
+  const data = await spGet(`web/lists/getbytitle('${CONFIG.shiftsListName}')/items?$select=Id,Title,ShiftDate,ShiftTime,Classification,Location,Spots&$orderby=ShiftDate`);
+  shifts = data.value.map(s=>({ id:s.Id, Title:s.Title, ShiftDate:s.ShiftDate, ShiftTime:s.ShiftTime, Classification:s.Classification, Location:s.Location, Spots:s.Spots }));
+}
+
+async function loadSignups(){
+  if(!CONFIG.useSharePoint){
+    signups = localSignups.map(s=>({...s}));
+    return;
+  }
+  const data = await spGet(`web/lists/getbytitle('${CONFIG.signupsListName}')/items?$select=Id,Title,ShiftId,EmployeeName,SeniorityNumber,SignupTime,Assigned&$orderby=SeniorityNumber`);
+  signups = data.value.map(s=>({ id:s.Id, ShiftId:s.ShiftId, EmployeeName:s.EmployeeName, SeniorityNumber:s.SeniorityNumber, SignupTime:s.SignupTime, Assigned:s.Assigned||false }));
+}
+
+async function addSignup(shiftId, name, seniority){
+  if(!CONFIG.useSharePoint){
+    localSignups.push({ id:localNextSignupId++, ShiftId:shiftId, EmployeeName:name, SeniorityNumber:parseInt(seniority), SignupTime:nowStr(), Assigned:false });
+    return;
+  }
+  await spPost(`web/lists/getbytitle('${CONFIG.signupsListName}')/items`, {
+    Title: name,
+    ShiftId: shiftId,
+    EmployeeName: name,
+    SeniorityNumber: parseInt(seniority),
+    SignupTime: nowStr(),
+    Assigned: false
+  });
+}
+
+async function markAssigned(signupId){
+  if(!CONFIG.useSharePoint){
+    const s=localSignups.find(x=>x.id===signupId);
+    if(s) s.Assigned=true;
+    return;
+  }
+  await spPatch(`web/lists/getbytitle('${CONFIG.signupsListName}')/items(${signupId})`, { Assigned: true });
+}
+
+async function createShift(data){
+  if(!CONFIG.useSharePoint){
+    localShifts.push({ id:localNextId++, Title:`${data.Classification} — ${data.Location}`, ...data });
+    return;
+  }
+  await spPost(`web/lists/getbytitle('${CONFIG.shiftsListName}')/items`, {
+    Title: `${data.Classification} — ${data.Location}`,
+    ShiftDate: data.ShiftDate,
+    ShiftTime: data.ShiftTime,
+    Classification: data.Classification,
+    Location: data.Location,
+    Spots: data.Spots
+  });
+}
+
+async function updateShift(id, data){
+  if(!CONFIG.useSharePoint){
+    const s=localShifts.find(x=>x.id===id);
+    if(s) Object.assign(s, data, { Title:`${data.Classification} — ${data.Location}` });
+    return;
+  }
+  await spPatch(`web/lists/getbytitle('${CONFIG.shiftsListName}')/items(${id})`, {
+    Title: `${data.Classification} — ${data.Location}`,
+    ShiftDate: data.ShiftDate,
+    ShiftTime: data.ShiftTime,
+    Classification: data.Classification,
+    Location: data.Location,
+    Spots: parseInt(data.Spots)
+  });
+}
+
+async function deleteShiftById(id){
+  if(!CONFIG.useSharePoint){
+    localShifts = localShifts.filter(x=>x.id!==id);
+    localSignups = localSignups.filter(x=>x.ShiftId!==id);
+    return;
+  }
+  await spDelete(`web/lists/getbytitle('${CONFIG.shiftsListName}')/items(${id})`);
+}
+
+// ============================================================
+// Render helpers
+// ============================================================
+function signupsForShift(shiftId){ return signups.filter(s=>s.ShiftId===shiftId); }
+
+function switchTab(tab){
+  document.getElementById('tab-emp').classList.toggle('active', tab==='employee');
+  document.getElementById('tab-adm').classList.toggle('active', tab==='admin');
+  document.getElementById('view-employee').classList.toggle('active', tab==='employee');
+  document.getElementById('view-admin').classList.toggle('active', tab==='admin');
+  if(tab==='admin') renderAdmin(); else renderEmployee();
+}
+
+function renderFilterBar(){
+  const used=[...new Set(shifts.map(s=>s.Classification))];
+  const filters=['All',...used];
+  if(!filters.includes(activeFilter)) activeFilter='All';
+  document.getElementById('filter-bar').innerHTML=filters.map(f=>
+    `<button class="filter-chip${activeFilter===f?' active':''}" onclick="setFilter('${f}')">${f}</button>`
+  ).join('');
+}
+
+function setFilter(f){ activeFilter=f; renderEmployee(); }
+
+function renderEmployee(){
+  renderFilterBar();
+  const visible=activeFilter==='All'?shifts:shifts.filter(s=>s.Classification===activeFilter);
+  const grid=document.getElementById('shift-grid');
+  if(!visible.length){ grid.innerHTML='<p class="empty">No shifts available at this time.</p>'; return; }
+  grid.innerHTML=`<div class="shift-grid">${visible.map(s=>{
+    const sups=signupsForShift(s.id);
+    const signed=sups.find(x=>x.EmployeeName===myName);
+    const full=sups.length>=s.Spots;
+    const pct=Math.min(100,Math.round(sups.length/s.Spots*100));
+    const fillCls=pct===100?'full-fill':pct>=66?'warn':'';
+    let action='';
+    if(signed){
+      action=`<span class="signed-label">✓ Signed up${signed.SeniorityNumber?' — Seniority #'+signed.SeniorityNumber:''}</span>`;
+    } else if(full){
+      action=`<span class="full-label">Shift full</span>`;
+    } else {
+      action=`<div class="signup-fields">
+        <div class="field-row"><label>Your Name</label><input type="text" id="name-${s.id}" value="${myName}" placeholder="First Last"></div>
+        <div class="sen-row">
+          <div class="field-row"><label>Seniority #</label><input type="number" min="1" id="sen-${s.id}" value="${mySeniority}" placeholder="e.g. 42"></div>
+          <span class="sen-hint">Lower = more senior</span>
+        </div>
+        <button class="btn-signup" onclick="doSignup(${s.id})">Sign Up</button>
+      </div>`;
+    }
+    return `<div class="shift-card">
+      <div class="shift-header">
+        <div>
+          <div class="shift-date">${s.ShiftDate}</div>
+          <div class="shift-title">${s.Classification} — ${s.Location}</div>
+          <div class="shift-time">${s.ShiftTime}</div>
+        </div>
+        <span class="badge badge-${s.Classification}">${s.Classification}</span>
+      </div>
+      <div class="spots-bar"><div class="spots-fill ${fillCls}" style="width:${pct}%"></div></div>
+      <div class="shift-spots">${sups.length} of ${s.Spots} spots filled</div>
+      ${action}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function doSignup(shiftId){
+  const nameEl=document.getElementById('name-'+shiftId);
+  const senEl=document.getElementById('sen-'+shiftId);
+  const name=nameEl?nameEl.value.trim():'';
+  const seniority=senEl?senEl.value.trim():'';
+  if(!name){ showToast('Please enter your name'); return; }
+  if(!seniority){ showToast('Please enter your seniority number'); return; }
+  const s=shifts.find(x=>x.id===shiftId);
+  const sups=signupsForShift(shiftId);
+  if(sups.find(x=>x.EmployeeName===name)){ showToast('You are already signed up for this shift'); return; }
+  if(sups.length>=s.Spots){ showToast('This shift is now full'); return; }
+  myName=name; mySeniority=seniority;
+  try {
+    await addSignup(shiftId, name, parseInt(seniority));
+    await loadSignups();
+    renderEmployee();
+    showToast(`Signed up for ${s.Classification} shift on ${s.ShiftDate}`);
+  } catch(e){
+    showBanner('Error saving sign-up. Please try again.', true);
+  }
+}
+
+function renderAdmin(){
+  const content=document.getElementById('admin-content');
+  if(!adminUnlocked){ renderLock(); return; }
+  let html=`<div class="admin-header">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="openAddShift()">+ Add Shift</button>
+      <button class="btn" onclick="exportCSV()">Export CSV</button>
+      <button class="btn" onclick="refreshAll()">↻ Refresh</button>
+    </div>
+    <button class="btn btn-danger" onclick="adminUnlocked=false;renderAdmin()" style="font-size:12px">Lock Admin</button>
+  </div>
+  <div class="admin-list">`;
+  if(!shifts.length){ html+='<p class="empty">No shifts yet. Add one above.</p>'; }
+  shifts.forEach(s=>{
+    const sups=signupsForShift(s.id).sort((a,b)=>(a.SeniorityNumber||9999)-(b.SeniorityNumber||9999));
+    const rows=sups.length?`<table class="signups-table">
+      <thead><tr><th>Employee</th><th>Seniority #</th><th>Signed Up</th><th>Status</th></tr></thead>
+      <tbody>${sups.map(p=>`<tr>
+        <td><strong>${p.EmployeeName}</strong></td>
+        <td><span class="seniority-chip">#${p.SeniorityNumber||'?'}</span></td>
+        <td>${p.SignupTime||''}</td>
+        <td>${p.Assigned
+          ?`<span class="assigned-chip">✓ Assigned</span>`
+          :`<button class="assign-btn" onclick="doAssign(${p.id})">Assign</button>`}
+        </td>
+      </tr>`).join('')}</tbody>
+    </table>`:`<p class="no-signups">No sign-ups yet</p>`;
+    html+=`<div class="admin-card">
+      <div class="admin-top">
+        <div class="admin-info">
+          <span class="badge badge-${s.Classification}">${s.Classification}</span>
+          <strong>${s.ShiftDate} &nbsp;·&nbsp; ${s.ShiftTime}</strong>
+          <span style="font-size:13px;color:#605e5c">${s.Location}</span>
+          <span style="font-size:12px;color:#a19f9d">${signupsForShift(s.id).length}/${s.Spots} spots</span>
+        </div>
+        <div class="admin-actions">
+          <button class="btn-sm" onclick="openEditShift(${s.id})">Edit</button>
+          <button class="btn-sm btn-danger" onclick="doDeleteShift(${s.id})">Delete</button>
+        </div>
+      </div>
+      <p class="sort-note">Sorted by seniority — lowest number = most senior</p>
+      ${rows}
+    </div>`;
+  });
+  html+='</div>';
+  content.innerHTML=html;
+}
+
+function renderLock(){
+  document.getElementById('admin-content').innerHTML=`
+    <div class="lock-wrap">
+      <div class="lock-box">
+        <h3>Admin Access</h3>
+        <p>Enter the admin password to manage shifts and view sign-ups.</p>
+        <div class="form-row"><label>Password</label><input type="password" id="pw-input" placeholder="Enter password" onkeydown="if(event.key==='Enter')tryUnlock()"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="tryUnlock()">Unlock</button>
+        <div class="lock-error" id="lock-error"></div>
+      </div>
+    </div>`;
+  setTimeout(()=>{ const el=document.getElementById('pw-input'); if(el) el.focus(); },50);
+}
+
+function tryUnlock(){
+  const pw=document.getElementById('pw-input').value;
+  if(pw===CONFIG.adminPassword){ adminUnlocked=true; renderAdmin(); }
+  else { document.getElementById('lock-error').textContent='Incorrect password. Try again.'; }
+}
+
+async function doAssign(signupId){
+  try {
+    await markAssigned(signupId);
+    await loadSignups();
+    renderAdmin();
+    showToast('Employee assigned');
+  } catch(e){ showBanner('Error updating assignment.', true); }
+}
+
+async function doDeleteShift(id){
+  if(!confirm('Delete this shift and all its sign-ups?')) return;
+  try {
+    await deleteShiftById(id);
+    await loadShifts(); await loadSignups();
+    renderAdmin(); renderFilterBar();
+    showToast('Shift deleted');
+  } catch(e){ showBanner('Error deleting shift.', true); }
+}
+
+function openAddShift(){ openShiftModal(null); }
+function openEditShift(id){ openShiftModal(shifts.find(x=>x.id===id)); }
+
+function openShiftModal(shift){
+  const isEdit=!!shift;
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <h3>${isEdit?'Edit Shift':'Add Shift'}</h3>
+        <div class="form-row"><label>Date</label><input type="text" id="m-date" value="${isEdit?shift.ShiftDate:''}" placeholder="e.g. Mon, Apr 28"></div>
+        <div class="form-row"><label>Time</label><input type="text" id="m-time" value="${isEdit?shift.ShiftTime:''}" placeholder="e.g. 6:00 AM – 2:00 PM"></div>
+        <div class="form-row"><label>Classification</label><select id="m-class">${CLASSIFICATIONS.map(c=>`<option${isEdit&&shift.Classification===c?' selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="form-row"><label>Location</label><input type="text" id="m-loc" value="${isEdit?shift.Location:''}" placeholder="e.g. Main Campus"></div>
+        <div class="form-row"><label>Number of Spots</label><input type="number" id="m-spots" min="1" value="${isEdit?shift.Spots:1}"></div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveShift(${isEdit?shift.id:'null'})">${isEdit?'Save Changes':'Add Shift'}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function closeModal(){ document.getElementById('modal-container').innerHTML=''; }
+
+async function saveShift(id){
+  const date=document.getElementById('m-date').value.trim();
+  const time=document.getElementById('m-time').value.trim();
+  const classification=document.getElementById('m-class').value;
+  const location=document.getElementById('m-loc').value.trim();
+  const spots=parseInt(document.getElementById('m-spots').value)||1;
+  if(!date||!time||!location){ showToast('Please fill in all fields'); return; }
+  try {
+    if(id){ await updateShift(id,{ShiftDate:date,ShiftTime:time,Classification:classification,Location:location,Spots:spots}); showToast('Shift updated'); }
+    else { await createShift({ShiftDate:date,ShiftTime:time,Classification:classification,Location:location,Spots:spots}); showToast('Shift added'); }
+    closeModal();
+    await loadShifts(); await loadSignups();
+    renderAdmin(); renderFilterBar();
+  } catch(e){ showBanner('Error saving shift.', true); }
+}
+
+function exportCSV(){
+  let rows=['Shift Date,Time,Classification,Location,Spots,Employee Name,Seniority #,Sign-up Time,Assigned'];
+  shifts.forEach(s=>{
+    const sups=signupsForShift(s.id).sort((a,b)=>(a.SeniorityNumber||9999)-(b.SeniorityNumber||9999));
+    if(sups.length){
+      sups.forEach(p=>rows.push(`"${s.ShiftDate}","${s.ShiftTime}","${s.Classification}","${s.Location}",${s.Spots},"${p.EmployeeName}",${p.SeniorityNumber||''},"${p.SignupTime}","${p.Assigned?'Yes':'No'}"`));
+    } else {
+      rows.push(`"${s.ShiftDate}","${s.ShiftTime}","${s.Classification}","${s.Location}",${s.Spots},"","","",""`);
+    }
+  });
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='overtime_signups.csv'; a.click();
+  showToast('CSV exported');
+}
+
+async function refreshAll(){
+  try {
+    await loadShifts(); await loadSignups();
+    renderAdmin();
+    showToast('Data refreshed');
+  } catch(e){ showBanner('Error refreshing data.', true); }
+}
+
+// Initial load
+(async()=>{
+  try {
+    await loadShifts();
+    await loadSignups();
+    renderEmployee();
+  } catch(e){
+    showBanner('Could not connect to SharePoint. Running in demo mode.', true);
+    renderEmployee();
+  }
+})();
+</script>
+</body>
+</html>
